@@ -14,16 +14,20 @@ export default function AdminPage() {
 
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevoPrecio, setNuevoPrecio] = useState('');
+  const [ventas, setVentas] = useState([]);
 
-  // Cargar productos guardados si existen
   useEffect(() => {
     const guardados = localStorage.getItem('productos_flama_roja');
     if (guardados) {
       setProductos(JSON.parse(guardados));
     }
+
+    const ventasGuardadas = localStorage.getItem('historial_ventas_flama');
+    if (ventasGuardadas) {
+      setVentas(JSON.parse(ventasGuardadas));
+    }
   }, []);
 
-  // Guardar cambios
   const guardarCambios = (nuevosProductos) => {
     setProductos(nuevosProductos);
     localStorage.setItem('productos_flama_roja', JSON.stringify(nuevosProductos));
@@ -54,6 +58,15 @@ export default function AdminPage() {
     guardarCambios(actualizados);
   };
 
+  const limpiarHistorial = () => {
+    if (confirm('¿Deseas cerrar el día y borrar el historial de ventas?')) {
+      localStorage.removeItem('historial_ventas_flama');
+      setVentas([]);
+    }
+  };
+
+  const totalGeneral = ventas.reduce((sum, v) => sum + (v.total || 0), 0);
+
   return (
     <div className="min-h-screen bg-zinc-900 text-white p-6">
       <div className="max-w-xl mx-auto">
@@ -62,6 +75,42 @@ export default function AdminPage() {
           <Link href="/" className="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded-lg text-sm">
             Volver al Menú
           </Link>
+        </div>
+
+        {/* REPORTE DE VENTAS DEL DÍA */}
+        <div className="bg-zinc-800 border border-zinc-700 p-5 rounded-xl mb-6 shadow-lg">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold text-amber-400">📊 Ventas del Día</h2>
+            {ventas.length > 0 && (
+              <button 
+                onClick={limpiarHistorial}
+                className="bg-red-600/80 hover:bg-red-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition"
+              >
+                Cerrar Día 🗑️
+              </button>
+            )}
+          </div>
+          <div className="mb-4">
+            <span className="text-zinc-400 text-xs block">Total Recaudado</span>
+            <span className="text-2xl font-extrabold text-amber-400">S/ {totalGeneral.toFixed(2)}</span>
+          </div>
+
+          {ventas.length === 0 ? (
+            <p className="text-zinc-500 text-sm italic">No hay ventas registradas todavía hoy.</p>
+          ) : (
+            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
+              {ventas.map((v) => (
+                <div key={v.id} className="bg-zinc-900 p-2.5 rounded border border-zinc-800 text-sm flex justify-between items-center">
+                  <div>
+                    <span className="font-bold text-amber-500 mr-2">{v.mesa}</span>
+                    <span className="text-zinc-300">({v.items.length} ítems)</span>
+                    <span className="text-zinc-500 text-xs ml-2">⏰ {v.hora}</span>
+                  </div>
+                  <span className="font-bold text-amber-400">S/ {v.total.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Formulario para agregar producto */}
