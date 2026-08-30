@@ -14,7 +14,6 @@ export default function CocinaPage() {
     };
     
     cargarPedidos();
-    // Actualizar cada 3 segundos para ver nuevos pedidos automáticamente
     const intervalo = setInterval(cargarPedidos, 3000);
     return () => clearInterval(intervalo);
   }, []);
@@ -43,10 +42,18 @@ export default function CocinaPage() {
           {pedidos.map((pedido) => (
             <div key={pedido.id} className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 flex flex-col justify-between shadow-lg">
               <div>
-                <div className="flex justify-between items-center mb-3 border-b border-zinc-700 pb-2">
+                {/* Ahora se muestra la mesa en grande */}
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xl font-bold text-white bg-zinc-700 px-3 py-1 rounded-lg">
+                    {pedido.mesa || 'Mesa ?'}
+                  </span>
                   <span className="text-amber-400 font-bold text-sm">⏰ {pedido.hora}</span>
+                </div>
+                
+                <div className="border-b border-zinc-700 pb-2 mb-3">
                   <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-1 rounded font-medium">Pendiente</span>
                 </div>
+
                 <ul className="flex flex-col gap-2 mb-4">
                   {pedido.items.map((item, index) => (
                     <li key={index} className="text-zinc-200 text-base font-medium flex items-center gap-2">

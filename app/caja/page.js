@@ -13,8 +13,8 @@ export default function CajaPage() {
   ]);
 
   const [pedido, setPedido] = useState([]);
+  const [mesa, setMesa] = useState('Mesa 1');
 
-  // Cargar los productos actualizados desde la administración
   useEffect(() => {
     const guardados = localStorage.getItem('productos_flama_roja');
     if (guardados) {
@@ -35,15 +35,26 @@ export default function CajaPage() {
 
   const enviarPedidoCocina = () => {
     if (pedido.length === 0) return;
+    
     const pedidosAnteriores = JSON.parse(localStorage.getItem('pedidos_cocina_flama')) || [];
+    
     const nuevoPedidoCocina = {
       id: Date.now(),
+      mesa: mesa,
       items: pedido,
+      total: total,
       hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       estado: 'Pendiente'
     };
+
+    // Guardar para cocina
     localStorage.setItem('pedidos_cocina_flama', JSON.stringify([nuevoPedidoCocina, ...pedidosAnteriores]));
-    alert('¡Pedido enviado a cocina con éxito!');
+
+    // Guardar también en el historial de ventas del día
+    const historialAnterior = JSON.parse(localStorage.getItem('historial_ventas_flama')) || [];
+    localStorage.setItem('historial_ventas_flama', JSON.stringify([nuevoPedidoCocina, ...historialAnterior]));
+
+    alert(`¡Pedido enviado a cocina para la ${mesa}!`);
     setPedido([]);
   };
 
@@ -53,7 +64,7 @@ export default function CajaPage() {
         <h1 className="text-2xl font-bold">💰 Caja - Flama Roja</h1>
         <div className="flex gap-3">
           <Link href="/admin" className="bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded-lg text-sm font-semibold">
-            ⚙️ Administrar Precios
+            ⚙️ Administrar
           </Link>
           <Link href="/" className="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded-lg text-sm">
             Menú Principal
@@ -79,11 +90,24 @@ export default function CajaPage() {
         {/* Resumen del pedido actual */}
         <div className="bg-zinc-800 p-5 rounded-xl border border-zinc-700 flex flex-col justify-between h-fit">
           <div>
-            <h2 className="text-lg font-semibold mb-4 border-b border-zinc-700 pb-2">Pedido Actual</h2>
+            <h2 className="text-lg font-semibold mb-3 border-b border-zinc-700 pb-2">Pedido Actual</h2>
+            
+            {/* Selector de Mesa */}
+            <div className="mb-4">
+              <label className="block text-xs text-zinc-400 mb-1 font-semibold">NÚMERO DE MESA / CLIENTE</label>
+              <input 
+                type="text" 
+                value={mesa} 
+                onChange={(e) => setMesa(e.target.value)}
+                placeholder="Ej. Mesa 3 o Llevar"
+                className="w-full bg-zinc-900 border border-zinc-700 p-2 rounded text-white font-bold"
+              />
+            </div>
+
             {pedido.length === 0 ? (
               <p className="text-zinc-400 text-sm italic">No hay productos seleccionados.</p>
             ) : (
-              <div className="flex flex-col gap-2 max-h-64 overflow-y-auto mb-4">
+              <div className="flex flex-col gap-2 max-h-52 overflow-y-auto mb-4">
                 {pedido.map((item, index) => (
                   <div key={index} className="flex justify-between items-center bg-zinc-900 p-2 rounded border border-zinc-800 text-sm">
                     <span>{item.nombre}</span>
