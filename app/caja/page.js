@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { supabase } from '../lib/supabase';
 
 export default function CajaPage() {
   const [productos, setProductos] = useState([
@@ -33,10 +34,8 @@ export default function CajaPage() {
 
   const total = pedido.reduce((sum, item) => sum + item.precio, 0);
 
-  const enviarPedidoCocina = () => {
+  const enviarPedidoCocina = async () => {
     if (pedido.length === 0) return;
-    
-    const pedidosAnteriores = JSON.parse(localStorage.getItem('pedidos_cocina_flama')) || [];
     
     const nuevoPedidoCocina = {
       id: Date.now(),
@@ -47,8 +46,15 @@ export default function CajaPage() {
       estado: 'Pendiente'
     };
 
-    localStorage.setItem('pedidos_cocina_flama', JSON.stringify([nuevoPedidoCocina, ...pedidosAnteriores]));
+    // Guardar en Supabase (Nube)
+    const { error } = await supabase.from('pedidos').insert([nuevoPedidoCocina]);
 
+    if (error) {
+      alert('Error al enviar el pedido: ' + error.message);
+      return;
+    }
+
+    // Guardar también en el historial local para las ventas del día del admin
     const historialAnterior = JSON.parse(localStorage.getItem('historial_ventas_flama')) || [];
     localStorage.setItem('historial_ventas_flama', JSON.stringify([nuevoPedidoCocina, ...historialAnterior]));
 
