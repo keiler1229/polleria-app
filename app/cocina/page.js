@@ -1,74 +1,70 @@
-'use client'
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+'use client';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
-const supabaseUrl = 'https://xqimttwyoghvqawylsbt.supabase.co'
-const supabaseKey = 'sb_publishable_1XEFN9zedpUePqIND4SByQ_lDUwBl_1'
-const supabase = createClient(supabaseUrl, supabaseKey)
-
-export default function CocinaPolleria() {
-  const [pedidos, setPedidos] = useState([])
+export default function CocinaPage() {
+  const [pedidos, setPedidos] = useState([]);
 
   useEffect(() => {
-    async function cargarPedidos() {
-      const { data, error } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('estado', 'pendiente')
-        .order('id', { ascending: true })
-      
-      if (error) console.error('Error al cargar pedidos:', error)
-      else setPedidos(data)
-    }
+    const cargarPedidos = () => {
+      const guardados = localStorage.getItem('pedidos_cocina_flama');
+      if (guardados) {
+        setPedidos(JSON.parse(guardados));
+      }
+    };
+    
+    cargarPedidos();
+    // Actualizar cada 3 segundos para ver nuevos pedidos automáticamente
+    const intervalo = setInterval(cargarPedidos, 3000);
+    return () => clearInterval(intervalo);
+  }, []);
 
-    cargarPedidos()
-
-    const canal = supabase
-      .channel('realtime-pedidos')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pedidos' }, payload => {
-        setPedidos(prev => [...prev, payload.new])
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(canal)
-    }
-  }, [])
-
-  const marcarComoCompletado = async (id) => {
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ estado: 'completado' })
-      .eq('id', id)
-
-    if (error) {
-      console.error(error)
-    } else {
-      setPedidos(prev => prev.filter(p => p.id !== id))
-    }
-  }
+  const completarPedido = (id) => {
+    const actualizados = pedidos.filter(p => p.id !== id);
+    setPedidos(actualizados);
+    localStorage.setItem('pedidos_cocina_flama', JSON.stringify(actualizados));
+  };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif', background: '#121212', minHeight: '100vh', color: '#fff' }}>
-      <h2>Pedidos Pendientes en Cocina</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px', marginTop: '20px' }}>
-        {pedidos.length === 0 ? (
-          <p style={{ color: '#aaa' }}>No hay pedidos pendientes por ahora.</p>
-        ) : (
-          pedidos.map(pedido => (
-            <div key={pedido.id} style={{ background: '#1e1e1e', padding: '20px', borderRadius: '8px', border: '1px solid #333' }}>
-              <span style={{ fontSize: '14px', color: '#f39c12' }}>Pedido #{pedido.id}</span>
-              <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '10px 0' }}>{pedido.detalle}</p>
-              <button 
-                onClick={() => marcarComoCompletado(pedido.id)}
-                style={{ width: '100%', padding: '10px', background: '#e74c3c', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' }}
+    <div className="min-h-screen bg-zinc-900 text-white p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">🍳 Cocina - Flama Roja</h1>
+        <Link href="/" className="bg-zinc-700 hover:bg-zinc-600 px-4 py-2 rounded-lg text-sm">
+          Menú Principal
+        </Link>
+      </div>
+
+      {pedidos.length === 0 ? (
+        <div className="text-center py-20 text-zinc-500 text-lg">
+          No hay pedidos pendientes en la cocina. ¡Buen trabajo! 🍗
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {pedidos.map((pedido) => (
+            <div key={pedido.id} className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 flex flex-col justify-between shadow-lg">
+              <div>
+                <div className="flex justify-between items-center mb-3 border-b border-zinc-700 pb-2">
+                  <span className="text-amber-400 font-bold text-sm">⏰ {pedido.hora}</span>
+                  <span className="bg-orange-500/20 text-orange-400 text-xs px-2 py-1 rounded font-medium">Pendiente</span>
+                </div>
+                <ul className="flex flex-col gap-2 mb-4">
+                  {pedido.items.map((item, index) => (
+                    <li key={index} className="text-zinc-200 text-base font-medium flex items-center gap-2">
+                      <span className="text-amber-500">•</span> {item.nombre}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <button
+                onClick={() => completarPedido(pedido.id)}
+                className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-2.5 rounded-lg transition"
               >
-                Marcar como Listos
+                Marcar como Listo / Entregado ✔️
               </button>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
-  )
+  );
 }
